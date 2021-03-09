@@ -25,9 +25,9 @@ function docComplete(fn) {
         // call on next available tick
         setTimeout(fn, 1);
     } else {
-        document.addEventListener('readystatechange', function(event) {
+        document.addEventListener('readystatechange', function (event) {
             if (event.target.readyState === 'complete') {
-              fn();
+                fn();
             }
         });
     }
@@ -52,47 +52,48 @@ function waitForExist(selectors, callback, timeout, clearIntervalOnTimeout, reso
     //
     // return true;
 
-    var existInterval = setInterval(function() {
-       if (selectors.every(function(ss) {
-          return document.querySelector(ss);
-          })) {
+    var existInterval = setInterval(function () {
+        if (selectors.every(function (ss) {
+            selectors.splice(selectors.indexOf(ss), 1);
+            return document.querySelector(ss);
+        })) {
 
-          // Always clear interval once all selectors are found
-          clearInterval(existInterval);
+            // Always clear interval once all selectors are found
+            clearInterval(existInterval);
 
-          try {
-            callback();
-          } catch (err) {
-            window.evolv.client.contaminate({details:err.message, reason:'error-thrown'});
-            throw err;
-          }
+            try {
+                callback();
+            } catch (err) {
+                window.evolv.client.contaminate({ details: err.message, reason: 'error-thrown' });
+                throw err;
+            }
 
-          // Only set interval to null and resolve if callback() runs without error
-          existInterval = null;
-          resolveCb();
-       }
+            // Only set interval to null and resolve if callback() runs without error
+            existInterval = null;
+            resolveCb();
+        }
     }, 100);
- 
+
     function checkExist() {
-        setTimeout(function() {
+        setTimeout(function () {
             if (existInterval) {
-               if (clearIntervalOnTimeout) {
-                   clearInterval(existInterval);
-               }
-               console.info(selectors);
-               rejectCb({ message : "Selectors not found or other error thrown: " + selectors.toString() });
-            }    
-         }, timeout);
+                if (clearIntervalOnTimeout) {
+                    clearInterval(existInterval);
+                }
+                console.info(selectors);
+                rejectCb({ message: "Selectors not found or other error thrown: " + selectors.toString() });
+            }
+        }, timeout);
     };
 
     // wait until document is complete before starting timer to check
     // for selector existence.
     docComplete(checkExist);
- };
+};
 
- module.exports = {
-     waitForExist: waitForExist,
-     emitSelectorTimeout: emitSelectorTimeout,
-     docComplete: docComplete,
-     docReady: docReady
- };
+module.exports = {
+    waitForExist: waitForExist,
+    emitSelectorTimeout: emitSelectorTimeout,
+    docComplete: docComplete,
+    docReady: docReady
+};
