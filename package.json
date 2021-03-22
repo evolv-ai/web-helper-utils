@@ -2,10 +2,14 @@
   "name": "@evolv-ai/web-helper-utils",
   "version": "0.0.1",
   "description": "Functions to help make writing Evolv experiments easier",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Teo Lisitza",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^4.2.3"
+  }
 }
