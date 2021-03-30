@@ -1,6 +1,6 @@
 {
   "name": "@evolv-ai/web-helper-utils",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Functions to help make writing Evolv experiments easier",
   "main": "index.js",
   "scripts": {

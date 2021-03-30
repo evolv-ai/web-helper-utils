@@ -40,59 +40,76 @@ function emitSelectorTimeout(messageObj) {
     window.evolv.client.emit('selector-timeout');
 }
 
-function waitForExist(selectors, callback, timeout, clearIntervalOnTimeout, resolveCb, rejectCb) {
-    // EXAMPLE USAGE from within an Evolv variant:
-    //
-    // waitForExist(['#header11'],
-    //              function() { console.log('render'); },
-    //              6000,
-    //              false,
-    //              resolve,
-    //              reject);
-    //
-    // return true;
+// EXAMPLE USAGE from within an Evolv variant:
+//
+// function render() { // do stuff }
+// render.variant = "2.1 example variant"
+// waitForExist(['#header11'],
+//              render,
+//              resolve,
+//              reject);
+//
+// return true;
+function waitForExist(selectors, renderCb, resolveCb, rejectCb, timeout=60000, clearIntervalOnTimeout=true) {
+    var variant = renderCb.variant;
 
-    var existInterval = setInterval(function() {
-       if (selectors.every(function(ss) {
-          return document.querySelector(ss);
-          })) {
-
-          // Always clear interval once all selectors are found
-          clearInterval(existInterval);
-
-          try {
-            callback();
-          } catch (err) {
-            window.evolv.client.contaminate({details:err.message, reason:'error-thrown'});
-            throw err;
-          }
-
-          // Only set interval to null and resolve if callback() runs without error
-          existInterval = null;
-          resolveCb();
-       }
+    // flatten nested selectors
+    selectors = selectors.map(function (selector) {
+        return Array.isArray(selector) ? selector.join(',') : selector;
+    });
+    var existInterval = setInterval(function () {
+        // check each selector; if found - move to found[] until selectors[] is empty
+        selectors = selectors.filter(function (selector) {
+            return !(typeof selector === "function" ? selector() : document.querySelector(selector));
+        });
+        if (selectors.length === 0) {
+            // Always clear interval once all selectors are found
+            clearInterval(existInterval);
+            try {
+                renderCb();
+            } catch (err) {
+                window.evolv.client.contaminate({
+                    details: err.message,
+                    reason: "Variant #" + variant + " wasn't applied"
+                });
+                throw err;
+            }
+            // Only set interval to null if renderCb() runs without error
+            existInterval = null;
+        }
     }, 100);
- 
-    function checkExist() {
-        setTimeout(function() {
-            if (existInterval) {
-               if (clearIntervalOnTimeout) {
-                   clearInterval(existInterval);
-               }
-               console.info(selectors);
-               rejectCb({ message : "Selectors not found or other error thrown: " + selectors.toString() });
-            }    
-         }, timeout);
-    };
 
+    function checkExist() {
+        setTimeout(function () {
+            if (existInterval) {
+                if (clearIntervalOnTimeout) {
+                    clearInterval(existInterval);
+                }
+                rejectCb({
+                    message: "Selectors not found or other error thrown: " + selectors.join('|') + "; Variant: " + variant
+                });
+            }
+        }, timeout);
+    }
     // wait until document is complete before starting timer to check
     // for selector existence.
     docComplete(checkExist);
- };
+    resolveCb();
+}
 
- module.exports = {
-     waitForExist: waitForExist,
-     emitSelectorTimeout: emitSelectorTimeout,
-     docComplete: docComplete,
-     docReady: docReady
- };
+function runVariant(attr, render) {
+    var htmlNode = document.children[0];
+
+    if (!htmlNode.hasAttribute(attr)) {
+        htmlNode.setAttribute(attr, true);
+        render();
+    }
+}
+
+module.exports = {
+    runVariant: runVariant,
+    waitForExist: waitForExist,
+    emitSelectorTimeout: emitSelectorTimeout,
+    docComplete: docComplete,
+    docReady: docReady
+};
